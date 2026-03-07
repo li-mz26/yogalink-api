@@ -1,0 +1,76 @@
+version: '3.8'
+
+services:
+  api:
+    build:
+      context: ../..
+      dockerfile: deployments/docker/Dockerfile
+    ports:
+      - "8080:8080"
+    environment:
+      - ENV=production
+    depends_on:
+      - postgres
+      - redis
+    networks:
+      - yogalink-network
+
+  scheduler:
+    build:
+      context: ../..
+      dockerfile: deployments/docker/Dockerfile.scheduler
+    environment:
+      - ENV=production
+    depends_on:
+      - postgres
+      - redis
+    networks:
+      - yogalink-network
+
+  worker:
+    build:
+      context: ../..
+      dockerfile: deployments/docker/Dockerfile.worker
+    environment:
+      - ENV=production
+    depends_on:
+      - postgres
+      - redis
+      - rabbitmq
+    networks:
+      - yogalink-network
+
+  postgres:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_USER: yogalink
+      POSTGRES_PASSWORD: yogalink123
+      POSTGRES_DB: yogalink
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    networks:
+      - yogalink-network
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    networks:
+      - yogalink-network
+
+  rabbitmq:
+    image: rabbitmq:3.11-management-alpine
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    networks:
+      - yogalink-network
+
+volumes:
+  postgres_data:
+
+networks:
+  yogalink-network:
+    driver: bridge

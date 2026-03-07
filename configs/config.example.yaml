@@ -1,0 +1,52 @@
+server:
+  port: 8080
+  mode: "debug" # debug/release/test
+  read_timeout: 30
+  write_timeout: 30
+
+database:
+  driver: "postgres"
+  host: "localhost"
+  port: 5432
+  username: "yogalink"
+  password: "yogalink123"
+  dbname: "yogalink"
+  ssl_mode: "disable"
+  max_open_conns: 100
+  max_idle_conns: 10
+
+redis:
+  host: "localhost"
+  port: 6379
+  password: ""
+  db: 0
+  pool_size: 10
+
+jwt:
+  secret: "your-secret-key-change-in-production"
+  expire_hours: 168 # 7 days
+
+log:
+  level: "info" # debug/info/warn/error
+  format: "json" # json/console
+  output: "stdout" # stdout/file
+
+sms:
+  provider: "aliyun" # aliyun/tencent
+  access_key: ""
+  access_secret: ""
+
+push:
+  provider: "jpush"
+  app_key: ""
+  master_secret: ""
+
+payment:
+  wechat:
+    app_id: ""
+    mch_id: ""
+    api_key: ""
+  alipay:
+    app_id: ""
+    private_key: ""
+    public_key: ""
