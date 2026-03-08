@@ -48,6 +48,7 @@ func main() {
 	courseRepo := repository.NewCourseRepository(db)
 	bookingRepo := repository.NewBookingRepository(db)
 	studioRepo := repository.NewStudioRepository(db)
+	verificationRepo := repository.NewVerificationRepository(db)
 
 	// 初始化服务层
 	userService := service.NewUserService(userRepo)
@@ -56,6 +57,7 @@ func main() {
 	courseService := service.NewCourseService(courseRepo, bookingRepo)
 	bookingService := service.NewBookingService(bookingRepo, courseRepo)
 	studioService := service.NewStudioService(studioRepo)
+	verificationService := service.NewVerificationService(verificationRepo, userRepo)
 
 	// 初始化处理器
 	userHandler := handler.NewUserHandler(userService)
@@ -64,6 +66,7 @@ func main() {
 	courseHandler := handler.NewCourseHandler(courseService)
 	bookingHandler := handler.NewBookingHandler(bookingService)
 	studioHandler := handler.NewStudioHandler(studioService)
+	verificationHandler := handler.NewVerificationHandler(verificationService)
 
 	r := gin.Default()
 
@@ -93,6 +96,12 @@ func main() {
 		{
 			// 用户相关
 			auth.GET("/user/profile", userHandler.GetProfile)
+
+			// 实名认证
+			auth.POST("/user/verification", verificationHandler.SubmitRealNameVerification)
+			auth.GET("/user/verification/status", verificationHandler.GetVerificationStatus)
+			auth.POST("/user/face-verification/:booking_id", verificationHandler.FaceVerification)
+			auth.GET("/user/face-verification/:booking_id/status", verificationHandler.CheckFaceVerificationStatus)
 
 			// 老师端 API
 			teacher := auth.Group("/teacher")

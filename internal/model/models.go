@@ -14,18 +14,19 @@ const (
 
 // User 用户模型
 type User struct {
-	ID        uint64    `gorm:"primarykey" json:"id"`
-	UUID      string    `gorm:"uniqueIndex;size:36" json:"uuid"`
-	Phone     string    `gorm:"uniqueIndex;size:20" json:"phone"`
-	Email     string    `gorm:"uniqueIndex;size:100" json:"email,omitempty"`
-	Password  string    `gorm:"size:255" json:"-"`
-	Nickname  string    `gorm:"size:50" json:"nickname"`
-	Avatar    string    `gorm:"size:500" json:"avatar"`
-	Gender    int8      `gorm:"default:0" json:"gender"` // 0-未知 1-男 2-女
-	Role      UserRole  `gorm:"size:20;default:'student'" json:"role"` // teacher/student
-	Status    int8      `gorm:"default:1" json:"status"` // 0-禁用 1-正常
-	CreatedAt time.Time `json:"created_at"`
-	UpdatedAt time.Time `json:"updated_at"`
+	ID                 uint64             `gorm:"primarykey" json:"id"`
+	UUID               string             `gorm:"uniqueIndex;size:36" json:"uuid"`
+	Phone              string             `gorm:"uniqueIndex;size:20" json:"phone"`
+	Email              string             `gorm:"uniqueIndex;size:100" json:"email,omitempty"`
+	Password           string             `gorm:"size:255" json:"-"`
+	Nickname           string             `gorm:"size:50" json:"nickname"`
+	Avatar             string             `gorm:"size:500" json:"avatar"`
+	Gender             int8               `gorm:"default:0" json:"gender"`                              // 0-未知 1-男 2-女
+	Role               UserRole           `gorm:"size:20;default:'student'" json:"role"`                // teacher/student
+	VerificationStatus VerificationStatus `gorm:"size:20;default:'unverified'" json:"verification_status"` // 实名认证状态
+	Status             int8               `gorm:"default:1" json:"status"`                              // 0-禁用 1-正常
+	CreatedAt          time.Time          `json:"created_at"`
+	UpdatedAt          time.Time          `json:"updated_at"`
 }
 
 // TeacherProfile 老师档案

@@ -47,6 +47,13 @@ func (r *UserRepository) Update(ctx context.Context, user *model.User) error {
 	return r.db.WithContext(ctx).Save(user).Error
 }
 
+// UpdateVerificationStatus 更新用户实名认证状态
+func (r *UserRepository) UpdateVerificationStatus(ctx context.Context, userID uint64, status model.VerificationStatus) error {
+	return r.db.WithContext(ctx).Model(&model.User{}).
+		Where("id = ?", userID).
+		Update("verification_status", status).Error
+}
+
 // TeacherProfileRepository 老师档案数据访问
 type TeacherProfileRepository struct {
 	db *gorm.DB
