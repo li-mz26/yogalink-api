@@ -5,9 +5,10 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/yogalink/yogalink-api/internal/handler"
+	"github.com/yogalink/yogalink-api/internal/model"
 	"github.com/yogalink/yogalink-api/internal/repository"
 	"github.com/yogalink/yogalink-api/internal/service"
-	"gorm.io/driver/mysql"
+	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )
 
@@ -126,6 +127,8 @@ func main() {
 
 			// 公开搜索 API
 			v1.GET("/teachers/nearby", studentHandler.FindNearbyTeachers)
+			v1.GET("/teachers", studentHandler.ListAllTeachers)
+			v1.GET("/teachers/by-specialty", studentHandler.ListTeachersBySpecialty)
 
 			// 兼容旧版 API（可选）
 			auth.GET("/courses", courseHandler.ListSchedules)
@@ -146,11 +149,34 @@ func main() {
 }
 
 func initDB() (*gorm.DB, error) {
-	dsn := "root:password@tcp(127.0.0.1:3306)/yogalink?charset=utf8mb4&parseTime=True&loc=Local"
+	// Docker Compose 环境
+	dsn := "host=localhost user=yogalink password=yogalink123 dbname=yogalink port=5432 sslmode=disable"
 	// 实际生产环境应从配置文件读取
-	db, err := gorm.Open(mysql.Open(dsn), &gorm.Config{})
+	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
 	if err != nil {
 		return nil, err
 	}
+
+	// 自动创建表
+	err = db.AutoMigrate(
+		&model.User{},
+		&model.TeacherProfile{},
+		&model.TeacherAvailability{},
+		&model.TeachingLocation{},
+		&model.BookingRequest{},
+		&model.StudentProfile{},
+		&model.Studio{},
+		&model.Instructor{},
+		&model.CourseTemplate{},
+		&model.CourseSchedule{},
+		&model.Booking{},
+		&model.RealNameVerification{},
+		&model.FaceVerificationRecord{},
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	log.Println("数据库表创建成功")
 	return db, nil
 }

@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"log"
 	"net/http"
 	"strconv"
 	"strings"
@@ -394,6 +395,50 @@ func (h *StudentHandler) FindNearbyTeachers(c *gin.Context) {
 	})
 }
 
+// ListAllTeachers 获取所有认证老师列表
+func (h *StudentHandler) ListAllTeachers(c *gin.Context) {
+	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
+	pageSize, _ := strconv.Atoi(c.DefaultQuery("page_size", "20"))
+
+	teachers, total, err := h.studentService.ListAllTeachers(c.Request.Context(), page, pageSize)
+	if err != nil {
+		Error(c, 500, "获取老师列表失败: "+err.Error())
+		return
+	}
+
+	Success(c, gin.H{
+		"list":       teachers,
+		"total":      total,
+		"page":       page,
+		"page_size":  pageSize,
+	})
+}
+
+// ListTeachersBySpecialty 根据专长筛选老师
+func (h *StudentHandler) ListTeachersBySpecialty(c *gin.Context) {
+	specialty := c.Query("specialty")
+	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
+	pageSize, _ := strconv.Atoi(c.DefaultQuery("page_size", "20"))
+
+	if specialty == "" {
+		Error(c, 400, "请指定专长分类")
+		return
+	}
+
+	teachers, total, err := h.studentService.ListTeachersBySpecialty(c.Request.Context(), specialty, page, pageSize)
+	if err != nil {
+		Error(c, 500, "获取老师列表失败: "+err.Error())
+		return
+	}
+
+	Success(c, gin.H{
+		"list":       teachers,
+		"total":      total,
+		"page":       page,
+		"page_size":  pageSize,
+	})
+}
+
 // CreateBookingRequest 学生创建预约请求
 func (h *StudentHandler) CreateBookingRequest(c *gin.Context) {
 	userID := c.GetUint64("userID")
@@ -453,6 +498,7 @@ func (h *CourseHandler) ListSchedules(c *gin.Context) {
 
 	result, err := h.courseService.ListSchedules(c.Request.Context(), date, page, pageSize)
 	if err != nil {
+		log.Printf("获取课程列表失败: %v", err)
 		Error(c, 500, "获取课程列表失败")
 		return
 	}

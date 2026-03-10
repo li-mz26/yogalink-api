@@ -105,6 +105,41 @@ func (r *TeacherProfileRepository) ListNearbyTeachers(ctx context.Context, lat, 
 	return profiles, total, err
 }
 
+// ListAllVerified 获取所有认证老师列表
+func (r *TeacherProfileRepository) ListAllVerified(ctx context.Context, page, pageSize int) ([]model.TeacherProfile, int64, error) {
+	var profiles []model.TeacherProfile
+	var total int64
+
+	query := r.db.WithContext(ctx).Model(&model.TeacherProfile{}).
+		Where("is_verified = ?", true)
+
+	query.Count(&total)
+	err := query.Order("rating DESC, total_reviews DESC").
+		Offset((page - 1) * pageSize).
+		Limit(pageSize).
+		Find(&profiles).Error
+
+	return profiles, total, err
+}
+
+// ListBySpecialty 根据专长筛选老师
+func (r *TeacherProfileRepository) ListBySpecialty(ctx context.Context, specialty string, page, pageSize int) ([]model.TeacherProfile, int64, error) {
+	var profiles []model.TeacherProfile
+	var total int64
+
+	query := r.db.WithContext(ctx).Model(&model.TeacherProfile{}).
+		Where("is_verified = ?", true).
+		Where("specialties ILIKE ?", "%"+specialty+"%")
+
+	query.Count(&total)
+	err := query.Order("rating DESC, total_reviews DESC").
+		Offset((page - 1) * pageSize).
+		Limit(pageSize).
+		Find(&profiles).Error
+
+	return profiles, total, err
+}
+
 // TeacherAvailabilityRepository 老师可用时间数据访问
 type TeacherAvailabilityRepository struct {
 	db *gorm.DB
@@ -128,7 +163,7 @@ func (r *TeacherAvailabilityRepository) CreateBatch(ctx context.Context, availab
 func (r *TeacherAvailabilityRepository) GetByTeacherID(ctx context.Context, teacherID uint64) ([]model.TeacherAvailability, error) {
 	var availabilities []model.TeacherAvailability
 	err := r.db.WithContext(ctx).
-		Where("teacher_id = ? AND date >= CURDATE()", teacherID).
+		Where("teacher_id = ? AND date >= TO_CHAR(CURRENT_DATE, 'YYYY-MM-DD')", teacherID).
 		Order("date ASC, start_time ASC").
 		Find(&availabilities).Error
 	return availabilities, err
@@ -147,7 +182,7 @@ func (r *TeacherAvailabilityRepository) GetByTeacherAndDate(ctx context.Context,
 // DeleteByTeacherID 删除老师的所有可用时间（用于重置）
 func (r *TeacherAvailabilityRepository) DeleteByTeacherID(ctx context.Context, teacherID uint64) error {
 	return r.db.WithContext(ctx).
-		Where("teacher_id = ? AND date >= CURDATE()", teacherID).
+		Where("teacher_id = ? AND date >= TO_CHAR(CURRENT_DATE, 'YYYY-MM-DD')", teacherID).
 		Delete(&model.TeacherAvailability{}).Error
 }
 

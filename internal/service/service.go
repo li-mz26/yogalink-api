@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log"
 	"math"
 	"time"
 
@@ -27,7 +28,7 @@ func NewUserService(userRepo *repository.UserRepository) *UserService {
 // RegisterRequest 注册请求
 type RegisterRequest struct {
 	Phone    string          `json:"phone" binding:"required"`
-	Password string          `json:"password" binding:"required,min:6"`
+	Password string          `json:"password" binding:"required,min=6"`
 	Nickname string          `json:"nickname"`
 	Role     model.UserRole  `json:"role" binding:"required,oneof=teacher student"`
 }
@@ -304,13 +305,19 @@ type NearbyTeacherRequest struct {
 type NearbyTeacherResponse struct {
 	TeacherID       uint64                  `json:"teacher_id"`
 	Nickname        string                  `json:"nickname"`
-	Avatar          string                  `json:"avatar"`
+	Avatar          string                  `json:"avatar"`         // 头像/生活照
 	Bio             string                  `json:"bio"`
 	Specialties     []string                `json:"specialties"`
 	TeachingYears   int                     `json:"teaching_years"`
 	HourlyRate      float64                 `json:"hourly_rate"`
+	TeachingStyle   string                  `json:"teaching_style"`
+	Certifications  []string                `json:"certifications"`
+	Languages       []string                `json:"languages"`
+	Photos          []string                `json:"photos"`         // 老师照片
+	YogaTools       []string                `json:"yoga_tools"`     // 可携带瑜伽工具
 	Rating          float32                 `json:"rating"`
 	TotalReviews    int                     `json:"total_reviews"`
+	IsVerified      bool                    `json:"is_verified"`
 	Distance        float64                 `json:"distance"`       // 距离（公里）
 	Locations       []model.TeachingLocation `json:"locations"`     // 授课地点
 }
@@ -366,6 +373,67 @@ func (s *StudentService) FindNearbyTeachers(ctx context.Context, req *NearbyTeac
 	}
 
 	return responses, int64(len(responses)), nil
+}
+
+// ListAllTeachers 获取所有认证老师列表
+func (s *StudentService) ListAllTeachers(ctx context.Context, page, pageSize int) ([]NearbyTeacherResponse, int64, error) {
+	profiles, total, err := s.teacherRepo.ListAllVerified(ctx, page, pageSize)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	return s.buildTeacherResponses(ctx, profiles, total)
+}
+
+// ListTeachersBySpecialty 根据专长筛选老师
+func (s *StudentService) ListTeachersBySpecialty(ctx context.Context, specialty string, page, pageSize int) ([]NearbyTeacherResponse, int64, error) {
+	profiles, total, err := s.teacherRepo.ListBySpecialty(ctx, specialty, page, pageSize)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	return s.buildTeacherResponses(ctx, profiles, total)
+}
+
+// buildTeacherResponses 构建老师响应列表
+func (s *StudentService) buildTeacherResponses(ctx context.Context, profiles []model.TeacherProfile, total int64) ([]NearbyTeacherResponse, int64, error) {
+	var responses []NearbyTeacherResponse
+	for _, profile := range profiles {
+		user, err := s.userRepo.GetByID(ctx, profile.UserID)
+		if err != nil {
+			continue
+		}
+
+		// 获取老师的授课地点
+		locations, _ := s.locationRepo.GetByTeacherID(ctx, profile.UserID)
+
+		// 使用用户头像或老师头像
+		avatar := user.Avatar
+		if avatar == "" {
+			avatar = profile.Avatar
+		}
+
+		responses = append(responses, NearbyTeacherResponse{
+			TeacherID:       profile.UserID,
+			Nickname:        user.Nickname,
+			Avatar:          avatar,
+			Bio:             profile.Bio,
+			Specialties:     profile.Specialties,
+			TeachingYears:   profile.TeachingYears,
+			HourlyRate:      profile.HourlyRate,
+			TeachingStyle:   profile.TeachingStyle,
+			Certifications:   profile.Certifications,
+			Languages:       profile.Languages,
+			Photos:          profile.Photos,
+			YogaTools:       profile.YogaTools,
+			Rating:          profile.Rating,
+			TotalReviews:    profile.TotalReviews,
+			IsVerified:      profile.IsVerified,
+			Locations:       locations,
+		})
+	}
+
+	return responses, total, nil
 }
 
 // CreateBookingRequest 创建预约请求
@@ -451,7 +519,7 @@ func NewCourseService(courseRepo *repository.CourseRepository, bookingRepo *repo
 
 // ScheduleListResponse 课程列表响应
 type ScheduleListResponse struct {
-	List       []model.CourseSchedule `json:"list"`
+	List       interface{}            `json:"list"`
 	Total      int64                  `json:"total"`
 	Page       int                    `json:"page"`
 	PageSize   int                    `json:"page_size"`
@@ -469,6 +537,7 @@ func (s *CourseService) ListSchedules(ctx context.Context, date string, page, pa
 
 	schedules, total, err := s.courseRepo.ListSchedules(ctx, date, page, pageSize)
 	if err != nil {
+		log.Printf("CourseRepo ListSchedules error: %v", err)
 		return nil, err
 	}
 
